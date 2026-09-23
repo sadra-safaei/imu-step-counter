@@ -2,7 +2,7 @@
 
 A wearable step-counting system based on an **MPU6050 6-DOF IMU**, **Arduino UNO**, and **Python-based digital signal processing**.
 
-The system acquires acceleration data during human walking and running, filters the measured signal, detects gait-related peaks, and estimates the number of steps using threshold-based peak detection. The project also evaluates the effect of sensor placement and walking speed on step-counting performance.
+The system acquires acceleration data during human walking and running, processes the measured signal, detects gait-related peaks, and estimates the number of steps using threshold-based peak detection. The project also investigates the effect of sensor placement and gait condition on step-counting performance.
 
 ---
 
@@ -12,7 +12,7 @@ This project was developed as part of the **Measurement and Control Systems** co
 
 The main objective was to design, implement, and experimentally evaluate a low-cost embedded step counter using inertial measurement data.
 
-The complete workflow consists of:
+The complete processing workflow is:
 
 ```text
 MPU6050 IMU
@@ -34,7 +34,7 @@ Step Count
 Experimental Evaluation
 ```
 
-The project includes experiments with different **sensor placements** and **gait conditions**, including walking and running.
+The project includes experimental data collected under different **gait conditions** and **sensor placements**.
 
 ---
 
@@ -43,13 +43,13 @@ The project includes experiments with different **sensor placements** and **gait
 * 6-axis inertial measurement using the MPU6050
 * Arduino-based acceleration data acquisition
 * Approximately 50 Hz sampling frequency
-* Magnitude-based acceleration analysis
+* Acceleration magnitude calculation from three axes
 * Digital low-pass filtering using a Butterworth filter
 * Zero-phase filtering using `filtfilt`
 * Threshold-based step detection
 * Peak detection using `scipy.signal.find_peaks`
 * Experimental threshold selection
-* Evaluation under different gait conditions
+* Evaluation under walking and running conditions
 * Comparison of waist- and neck-mounted sensor placements
 * Statistical evaluation of step-counting performance
 
@@ -105,26 +105,22 @@ The measured data are transmitted through the Arduino serial interface at **1152
 
 ## Experimental Setup
 
-The experiments investigated the effect of gait condition and sensor placement on step detection.
+The experiments investigated the effect of **sensor placement** and **gait condition** on step detection.
 
 ### Waist-Mounted Sensor
 
-The primary sensor placement was around the **waist/pelvic region**, selected to capture acceleration associated with body motion during walking.
+The sensor was mounted around the waist/abdominal region for experiments involving:
 
-Experiments included:
+* Walking
+* Running
 
-* Walking trials
-* Continuous walking
-* Segmented walking protocols
-* Running trials
+These experiments were used to evaluate step detection under different gait conditions.
 
 ### Neck-Mounted Sensor
 
-Additional walking trials were conducted with the IMU mounted near the **back of the neck**.
+Additional walking experiments were conducted with the IMU mounted near the back of the neck.
 
-This setup was used to investigate whether a different sensor location could provide a more distinguishable acceleration pattern for step detection.
-
-The corresponding experimental data and results are included in the repository.
+This setup was used to investigate step detection with a different sensor placement.
 
 ---
 
@@ -164,21 +160,21 @@ Zero-phase filtering was performed using:
 scipy.signal.filtfilt
 ```
 
-This allows the signal to be filtered without introducing the phase shift associated with conventional one-directional filtering.
+This filtering approach avoids introducing a phase shift into the processed signal.
 
 ---
 
 ### 3. Threshold Selection
 
-The filtered acceleration signal was analyzed through multiple walking trials to determine an appropriate detection threshold.
+Multiple walking trials were used to investigate an appropriate detection threshold.
 
-Based on the experimental evaluation, the baseline threshold was selected as:
+The baseline threshold selected for the main processing configuration was:
 
 ```text
 Threshold = 1.03 g
 ```
 
-The threshold was used together with a minimum peak-distance constraint to reduce false detections caused by small fluctuations in the signal.
+The threshold was combined with a minimum peak-distance constraint to reduce false detections caused by small fluctuations in the signal.
 
 ---
 
@@ -196,7 +192,7 @@ The baseline minimum distance between detected peaks was:
 Minimum peak distance = 0.35 s
 ```
 
-The resulting detected peaks correspond to estimated individual steps.
+The detected peaks were then used to estimate the total number of steps in each trial.
 
 ---
 
@@ -213,7 +209,7 @@ The main processing configuration was:
 | Minimum peak distance |                         0.35 s |
 | Peak detection        |      `scipy.signal.find_peaks` |
 
-For some running experiments, the parameters were adjusted experimentally. In particular, one running condition used a **3 Hz cutoff frequency** and a **1.05 g threshold**.
+For the evaluated running condition, the processing parameters were adjusted experimentally. One running test used a **3 Hz cutoff frequency** and a **1.05 g threshold**.
 
 ---
 
@@ -241,23 +237,20 @@ For the neck-mounted walking experiments, the reported results were:
 
 These trials produced zero counting error under the tested conditions.
 
-### Example Processing Result
+### Example: Test 8 — Waist-Mounted Walking
 
-The repository contains example raw, filtered, and detected-step plots for an experimental dataset.
+The following figure shows the step-detection result for **Test 8**, in which the sensor was mounted around the waist/abdominal region.
 
-The processing sequence is:
+The plot shows:
 
-```text
-Raw acceleration magnitude
-          ↓
-Butterworth filtering
-          ↓
-Thresholding
-          ↓
-Peak detection
-          ↓
-Detected step locations
-```
+* Raw acceleration magnitude
+* Filtered acceleration signal
+* Detection threshold
+* Detected step locations
+
+![Step Detection Results — Test 8](Results/test8/3_detected_steps.png)
+
+In this example, the processing pipeline detects **10 steps** using a **2 Hz cutoff frequency** and a **1.03 g threshold**.
 
 ---
 
@@ -270,15 +263,23 @@ The experimental results also revealed several limitations:
 * MEMS sensor noise and bias drift may influence the measurements.
 * Wired serial communication introduces a small acquisition latency.
 * Gait initiation and termination can produce boundary-related counting errors.
-* Fixed detection parameters may not perform equally well across all walking and running conditions.
-
-These limitations suggest that an adaptive step-detection approach could improve robustness across different users and gait patterns.
+* Fixed detection parameters may not perform equally across all walking and running conditions.
 
 ---
 
 ## Repository Structure
 
-The repository is organized according to the experimental workflow:
+The repository contains the experimental datasets, processing code, results, images, videos, and complete project report.
+
+The `Data` directory contains the datasets collected under the three main experimental conditions:
+
+1. **Walking with the sensor mounted around the waist/abdomen**
+2. **Walking with the sensor mounted near the neck**
+3. **Running with the sensor mounted around the waist/abdomen**
+
+Each experimental dataset is accompanied by its corresponding processing code and results.
+
+In addition, **Test 8**, which corresponds to a waist-mounted walking experiment, has been organized separately as an example dataset with its associated results.
 
 ```text
 imu-step-counter/
@@ -287,7 +288,20 @@ imu-step-counter/
 │   └── Arduino firmware and sensor acquisition files
 │
 ├── Data/
-│   └── Experimental datasets
+│   ├── Waist-mounted walking data
+│   │   ├── Experimental datasets
+│   │   ├── Processing code
+│   │   └── Corresponding results
+│   │
+│   ├── Neck-mounted walking data
+│   │   ├── Experimental datasets
+│   │   ├── Processing code
+│   │   └── Corresponding results
+│   │
+│   └── Waist-mounted running data
+│       ├── Experimental datasets
+│       ├── Processing code
+│       └── Corresponding results
 │
 ├── Images/
 │   └── Experimental setup images
@@ -299,7 +313,8 @@ imu-step-counter/
 │   └── Complete project report
 │
 ├── Results/
-│   └── Processed results and plots
+│   └── test8/
+│       └── Example results for Test 8
 │
 ├── Videos/
 │   └── Experimental demonstration videos
@@ -307,7 +322,7 @@ imu-step-counter/
 └── README.md
 ```
 
-The experimental datasets in `Data/` correspond to different measurement trials and conditions. Processing scripts and generated results are retained alongside the project materials to preserve the relationship between the measured data, analysis procedure, and resulting plots.
+The repository structure preserves the relationship between **experimental data, processing code, and corresponding results**.
 
 ---
 
@@ -346,7 +361,7 @@ The resulting measurements can be recorded as CSV data for subsequent processing
 
 ### 3. Process the Data
 
-Open the relevant Python processing script from the `Python/` directory.
+Open the relevant Python processing script from the `Python/` directory or the corresponding experimental dataset directory.
 
 The processing pipeline performs:
 
@@ -359,7 +374,7 @@ The processing pipeline performs:
 7. Step counting
 8. Visualization of detected steps
 
-The parameters can be modified in the Python script to evaluate different gait conditions.
+The processing parameters can be modified in the Python script to evaluate different gait conditions.
 
 ---
 
@@ -373,20 +388,7 @@ The repository contains processed signal plots illustrating:
 
 These plots provide a visual representation of the signal-processing pipeline and the relationship between acceleration peaks and estimated steps.
 
----
-
-## Future Work
-
-Several extensions were identified for future development:
-
-* Adaptive threshold and filter-parameter selection
-* Wireless data transmission using BLE or Wi-Fi
-* Real-time step detection
-* Estimation of cadence and walking speed
-* Estimation of stride length
-* Extraction of additional biomechanical gait features
-* Investigation of energy-expenditure-related features
-* Improved robustness across different users and sensor placements
+The example Test 8 result is shown above in the **Experimental Results** section.
 
 ---
 
